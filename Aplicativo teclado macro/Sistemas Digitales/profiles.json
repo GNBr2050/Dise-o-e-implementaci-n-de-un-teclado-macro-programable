@@ -1,0 +1,69 @@
+{
+    "default": {
+        "KEY_1": {
+            "type": "hotkey",
+            "value": "ctrl+c",
+            "color": "#4CAF50"
+        },
+        "KEY_2": {
+            "type": "hotkey",
+            "value": "ctrl+v",
+            "color": "#2196F3"
+        },
+        "KEY_3": {
+            "type": "open",
+            "value": "C:/Users/LENOVO/Downloads/Archivos del proyecto Sistemas Digitales/Gutierrez Nieva - Sistemas Digitales.docx",
+            "color": "#ff4246"
+        },
+        "ENC_A_DER": {
+            "type": "hotkey",
+            "value": "volumeup",
+            "color": "#E91E63"
+        },
+        "ENC_A_IZQ": {
+            "type": "hotkey",
+            "value": "volumedown",
+            "color": "#E91E63"
+        },
+        "KEY_6": {
+            "type": "write",
+            "value": "Buen d\u00eda",
+            "color": "#67c9da"
+        },
+        "KEY_*": {
+            "type": "open",
+            "value": "C:/Users/LENOVO/Downloads/Sistemas Digitales/diagrama.html",
+            "color": "#60fd44"
+        },
+        "KEY_4": {
+            "type": "open",
+            "value": "C:/Program Files/Microsoft Office/root/Office16/EXCEL.EXE",
+            "color": "#f5ff42"
+        },
+        "KEY_5": {
+            "type": "write",
+            "value": "Hola Mundo",
+            "color": "#9876cb"
+        },
+        "KEY_7": {
+            "type": "hotkey",
+            "value": "nexttrack",
+            "color": "#4565fc"
+        },
+        "KEY_8": {
+            "type": "open",
+            "value": "C:/Users/LENOVO/Downloads/Archivos del proyecto Sistemas Digitales/Gutierrez Nieva - Sistemas Digitales.docx",
+            "color": "#7b7bc6"
+        },
+        "KEY_#": {
+            "type": "hotkey",
+            "value": "",
+            "color": "#d98f68"
+        },
+        "KEY_9": {
+            "type": "hotkey",
+            "value": "",
+            "color": "#333"
+        }
+    }
+}
