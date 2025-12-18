@@ -1,0 +1,208 @@
+#include <Keypad.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+// --- CONFIGURACIÓN PANTALLA OLED ---
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define OLED_RESET    -1
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
+// Variables de Datos y Estado
+String pcTime = "--:--";
+String pcRam = "RAM: --%";
+
+// Variables para efecto "Popup" (Mostrar tecla grande)
+unsigned long lastInteractionTime = 0;
+bool showingPopup = false;
+
+// --- CONFIGURACIÓN TECLADO MATRICIAL (3 Filas x 4 Columnas) ---
+const byte ROWS = 3; 
+const byte COLS = 4; 
+
+/* Mapa de teclas exacto según tu solicitud:
+   Fila 1: 1, 2, 3, 4
+   Fila 2: 5, 6, 7, 8
+   Fila 3: *, 9, 0, #
+*/
+char hexaKeys[ROWS][COLS] = {
+  {'1', '2', '3', '4'},
+  {'5', '6', '7', '8'},
+  {'*', '9', '0', '#'}
+};
+
+// --- PINES SEGÚN TU CORRECCIÓN ---
+// Pines de las 3 FILAS: 10, 11, 12
+byte rowPins[ROWS] = {12, 11, 10}; 
+
+// Pines de las 4 COLUMNAS: 6, 7, 8, 9
+byte colPins[COLS] = {9,8,7,6}; 
+
+Keypad customKeypad = Keypad(makeKeymap(hexaKeys), rowPins, colPins, ROWS, COLS);
+
+// --- CONFIGURACIÓN ENCODERS (Confirmada) ---
+
+// ENCODER IZQUIERDO (A)
+#define ENC_A_CLK 3  
+#define ENC_A_DT  5  
+#define ENC_A_SW  A1  
+
+// ENCODER DERECHO (B)
+#define ENC_B_CLK 2  
+#define ENC_B_DT  4   
+#define ENC_B_SW  A0  
+
+// Variables de estado
+int lastClk_A, lastClk_B;
+bool lastBtn_A = HIGH;
+bool lastBtn_B = HIGH;
+
+void setup() {
+  Serial.begin(9600); 
+
+  // Iniciar OLED (Pines A4=SDA, A5=SCL)
+  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { 
+    for(;;); // Bucle infinito si falla
+  }
+  
+  // MANTENEMOS ROTACIÓN 180 GRADOS (Según tu indicación anterior)
+  display.setRotation(2); 
+  
+  display.clearDisplay();
+  display.setTextColor(WHITE);
+  display.display();
+
+  // Configurar Pines Encoders
+  pinMode(ENC_A_CLK, INPUT);
+  pinMode(ENC_A_DT, INPUT);
+  pinMode(ENC_A_SW, INPUT_PULLUP);
+
+  pinMode(ENC_B_CLK, INPUT);
+  pinMode(ENC_B_DT, INPUT);
+  pinMode(ENC_B_SW, INPUT_PULLUP);
+
+  lastClk_A = digitalRead(ENC_A_CLK);
+  lastClk_B = digitalRead(ENC_B_CLK);
+}
+
+void loop() {
+  // 1. LEER TECLADO
+  char customKey = customKeypad.getKey();
+  if (customKey){
+    String keyName = "KEY_";
+    keyName += customKey;
+    Serial.println(keyName); 
+    triggerPopup(String(customKey)); 
+  }
+
+  // 2. LEER ENCODERS
+  readEncoderA();
+  readEncoderB();
+
+  // 3. LEER DATOS DESDE PYTHON
+  readSerialData();
+
+  // 4. GESTIÓN VISUAL PANTALLA
+  if (showingPopup) {
+    if (millis() - lastInteractionTime > 1000) {
+      showingPopup = false;
+      updateScreenNormal(); 
+    }
+  } else {
+    static unsigned long lastUpdate = 0;
+    if (millis() - lastUpdate > 500) {
+      updateScreenNormal();
+      lastUpdate = millis();
+    }
+  }
+}
+
+// Muestra qué tecla o giro se accionó
+void triggerPopup(String text) {
+  showingPopup = true;
+  lastInteractionTime = millis();
+  
+  display.clearDisplay();
+  display.setTextSize(4); 
+  
+  int16_t x1, y1;
+  uint16_t w, h;
+  display.getTextBounds(text, 0, 0, &x1, &y1, &w, &h);
+  display.setCursor((SCREEN_WIDTH - w) / 2, (SCREEN_HEIGHT - h) / 2);
+  
+  display.println(text);
+  display.display();
+}
+
+// Pantalla de reposo (Hora/RAM)
+void updateScreenNormal() {
+  if (showingPopup) return; 
+
+  display.clearDisplay();
+  
+  display.setTextSize(3);
+  display.setCursor(10, 10); 
+  display.println(pcTime);
+
+  display.setTextSize(1);
+  display.setCursor(30, 50);
+  display.println(pcRam);
+
+  display.display();
+}
+
+void readEncoderA() {
+  int currentClk = digitalRead(ENC_A_CLK);
+  if (currentClk != lastClk_A && currentClk == 1) {
+    if (digitalRead(ENC_A_DT) != currentClk) {
+      Serial.println("ENC_A_DER");
+      triggerPopup("A->");
+    } else {
+      Serial.println("ENC_A_IZQ");
+      triggerPopup("<-A");
+    }
+  }
+  lastClk_A = currentClk;
+
+  bool btnState = digitalRead(ENC_A_SW);
+  if (btnState == LOW && lastBtn_A == HIGH) {
+    Serial.println("BTN_A_PRESS");
+    triggerPopup("BTN A");
+    delay(50);
+  }
+  lastBtn_A = btnState;
+}
+
+void readEncoderB() {
+  int currentClk = digitalRead(ENC_B_CLK);
+  if (currentClk != lastClk_B && currentClk == 1) {
+    if (digitalRead(ENC_B_DT) != currentClk) {
+      Serial.println("ENC_B_DER");
+      triggerPopup("B->");
+    } else {
+      Serial.println("ENC_B_IZQ");
+      triggerPopup("<-B");
+    }
+  }
+  lastClk_B = currentClk;
+
+  bool btnState = digitalRead(ENC_B_SW);
+  if (btnState == LOW && lastBtn_B == HIGH) {
+    Serial.println("BTN_B_PRESS");
+    triggerPopup("BTN B");
+    delay(50);
+  }
+  lastBtn_B = btnState;
+}
+
+void readSerialData() {
+  if (Serial.available() > 0) {
+    String data = Serial.readStringUntil('\n');
+    int separatorIndex = data.indexOf('|');
+    if (separatorIndex > 0) {
+      pcTime = data.substring(0, separatorIndex);
+      pcRam = data.substring(separatorIndex + 1);
+    }
+  }
+}
